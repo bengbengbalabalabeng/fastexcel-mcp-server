@@ -23,6 +23,12 @@ Java server implementing Model Context Protocol (MCP) for Excel operations with 
         - `sheetName` (string, optional): Name of the sheet to read. Defaults to the first sheet if empty.
     - Returns the total count of data rows as an integer.
 
+- **get_sheet_names**
+    - Retrieve all sheet names and their indices from an Excel file.
+    - Inputs:
+        - `excelPath` (string): Absolute or relative path to the Excel file.
+    - Returns a list of json objects containing sheet number and sheet name.
+
 - **read_head_spec**
     - Parse and return the header information from an Excel file.
     - Inputs:

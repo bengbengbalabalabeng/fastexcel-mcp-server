@@ -202,172 +202,33 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.service;
+package org.baicaixiaozhan.mcp.server.fastexecl.domain.modal;
 
-import cn.idev.excel.ExcelReader;
-import cn.idev.excel.FastExcelFactory;
-import cn.idev.excel.read.builder.ExcelReaderSheetBuilder;
-import cn.idev.excel.read.metadata.ReadSheet;
-import jakarta.annotation.Nullable;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
-import org.baicaixiaozhan.mcp.server.fastexecl.config.properties.FastExcelMcpServerProperties;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelPropertyHead;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelRowProperties;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelSheet;
-import org.baicaixiaozhan.mcp.server.fastexecl.exception.InvalidWorkSpacePathException;
-import org.baicaixiaozhan.mcp.server.fastexecl.listener.ExcelHeadAnalysisEventListener;
-import org.baicaixiaozhan.mcp.server.fastexecl.listener.ExcelRowsAnalysisEventListener;
-import org.springframework.ai.tool.annotation.Tool;
-import org.springframework.ai.tool.annotation.ToolParam;
-import org.springframework.stereotype.Service;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.nio.file.InvalidPathException;
-import java.nio.file.Path;
-import java.util.List;
-import java.util.Objects;
+import java.io.Serializable;
 
 /**
- * DESC: FastExcel (具有标准化表头 -> 列关系的) 操作服务
+ * DESC: Excel Sheet 信息
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Slf4j
-@RequiredArgsConstructor
-@Service
-public class FastExcelSpecOperations {
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class ExcelSheet implements Serializable {
 
-    private final FastExcelMcpServerProperties properties;
+    /**
+     * Sheet 序号
+     */
+    private Integer sheetNo;
 
-
-    // get_total_rows_number
-    @Tool(
-            name = "get_total_rows_number",
-            description = """
-                    Get the total number of data rows (excluding the header row) in an Excel file.
-                    Validates the input path and checks if it belongs to the configured workspaces.
-                    Requires specifying the header row number to exclude it from the count.
-                    Optionally supports specifying the sheet name;  defaults to the first sheet if empty.
-                    Returns the total count of data rows as an integer.
-                    """
-    )
-    public Integer getTotalRowsNumber(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath,
-                                      @ToolParam(description = "Row number (1-based index) where the header is located.") Integer headRowNumber,
-                                      @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
-        validateInputPath(excelPath);
-
-        List<Object> list = createSheetBuilder(excelPath, sheetName)
-                .headRowNumber(headRowNumber)
-                .doReadSync();
-        return CollectionUtils.size(list);
-    }
-
-    // get_sheet_names
-    @Tool(
-            name = "get_sheet_names",
-            description = """
-                    Retrieve the names and indices of all sheets in an Excel file.
-                    Validates the input path and checks if it belongs to the configured workspaces.
-                    Returns a list of json objects containing sheet numbers and names.
-                    """
-    )
-    public List<ExcelSheet> getSheetNames(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath) {
-        validateInputPath(excelPath);
-
-        List<ReadSheet> sheets;
-        try (ExcelReader excelReader = FastExcelFactory.read(excelPath).build()) {
-            sheets = excelReader.excelExecutor().sheetList();
-        }
-        return sheets.stream()
-                .map(sheet -> new ExcelSheet(sheet.getSheetNo(), sheet.getSheetName()))
-                .toList();
-    }
-
-    // read_head_spec
-    @Tool(
-            name = "read_head_spec",
-            description = """
-                    Parse and return the header information from an Excel file.
-                    Validates the input path and checks if it belongs to the configured workspaces.
-                    Supports specifying the header row number and optional sheet name.
-                    Returns a sorted list of ExcelPropertyHead objects containing column index and header titles.
-                    """
-    )
-    public List<ExcelPropertyHead> readHead(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath,
-                                            @ToolParam(description = "Row number (1-based index) where the header is located.") Integer headRowNumber,
-                                            @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
-        validateInputPath(excelPath);
-
-        ExcelReaderSheetBuilder builder = createSheetBuilder(excelPath, sheetName);
-
-        ExcelHeadAnalysisEventListener listener = new ExcelHeadAnalysisEventListener();
-        builder.headRowNumber(headRowNumber)
-                .registerReadListener(listener)
-                .numRows(headRowNumber)
-                .doRead();
-        return listener.getHeadList();
-    }
-
-    // read_rows_spec
-    @Tool(
-            name = "read_rows_spec",
-            description = """
-                    Parse and return the data rows from an Excel file with header association.
-                    Validates the input path and checks if it belongs to the configured workspaces.
-                    Requires specifying the header row number to map data columns to headers.
-                    Optionally supports limiting the number of rows to read (excluding the header).
-                    Returns a list of ExcelRowProperties containing row data linked to their headers.
-                    """
-    )
-    public List<ExcelRowProperties> readRows(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath,
-                                             @ToolParam(description = "Row number (1-based index) where the header is located.") Integer headRowNumber,
-                                             @ToolParam(required = false, description = "Number of data rows to read (excludes header). If null, reads all rows.") Integer readRowNumbers,
-                                             @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
-        validateInputPath(excelPath);
-
-        ExcelReaderSheetBuilder builder = createSheetBuilder(excelPath, sheetName);
-        if (Objects.nonNull(readRowNumbers)) {
-            builder.numRows(headRowNumber + readRowNumbers);
-        }
-
-        ExcelRowsAnalysisEventListener listener = new ExcelRowsAnalysisEventListener();
-        builder.headRowNumber(headRowNumber)
-                .registerReadListener(listener)
-                .doRead();
-        return listener.getRows();
-    }
-
-
-    // =========================================
-
-    private ExcelReaderSheetBuilder createSheetBuilder(String excelPath, String sheetName) {
-        if (StringUtils.isNotBlank(sheetName)) {
-            return FastExcelFactory.read(excelPath).sheet(sheetName);
-        }
-        return FastExcelFactory.read(excelPath).sheet(0);
-    }
-
-    private void validateInputPath(@Nullable String path) {
-        if (StringUtils.isBlank(path)) {
-            throw new InvalidWorkSpacePathException("未检测到有效路径");
-        }
-        List<Path> workspaces = properties.getWorkspaces();
-
-        Path inputPath;
-        try {
-            inputPath = Path.of(path).normalize().toAbsolutePath();
-        } catch (InvalidPathException ex) {
-            throw new InvalidWorkSpacePathException("[%s] 不是有效路径".formatted(path), ex);
-        }
-
-        boolean notInWorkSpaces = workspaces.stream()
-                .noneMatch(workspace -> inputPath.startsWith(workspace.normalize().toAbsolutePath()));
-        if (notInWorkSpaces) {
-            throw new InvalidWorkSpacePathException("[%s] 不属于默认工作路径下".formatted(path));
-        }
-    }
+    /**
+     * Sheet 名称
+     */
+    private String sheetName;
 
 }

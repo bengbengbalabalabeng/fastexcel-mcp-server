@@ -212,6 +212,7 @@ import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.baicaixiaozhan.mcp.server.fastexecl.config.properties.FastExcelMcpServerProperties;
 import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelPropertyHead;
@@ -220,14 +221,22 @@ import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelSheet;
 import org.baicaixiaozhan.mcp.server.fastexecl.exception.InvalidWorkSpacePathException;
 import org.baicaixiaozhan.mcp.server.fastexecl.listener.ExcelHeadAnalysisEventListener;
 import org.baicaixiaozhan.mcp.server.fastexecl.listener.ExcelRowsAnalysisEventListener;
+import org.baicaixiaozhan.mcp.server.fastexecl.util.CacheUtils;
 import org.springframework.ai.tool.annotation.Tool;
 import org.springframework.ai.tool.annotation.ToolParam;
 import org.springframework.stereotype.Service;
+import org.springframework.util.DigestUtils;
 
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * DESC: FastExcel (具有标准化表头 -> 列关系的) 操作服务
@@ -240,12 +249,19 @@ import java.util.Objects;
 @Service
 public class FastExcelSpecOperations {
 
+    private static final String GET_TOTAL_ROWS_NUMBER = "get_total_rows_number";
+    private static final String GET_SHEET_NAMES = "get_sheet_names";
+    private static final String READ_HEAD_SPEC = "read_head_spec";
+    private static final String READ_ROWS_SPEC = "read_rows_spec";
+    private static final String CACHE_CLEAR = "cache_clear";
+    private static final String TEST_CACHE_AVAILABLE = "test_cache_available";
+
     private final FastExcelMcpServerProperties properties;
 
 
     // get_total_rows_number
     @Tool(
-            name = "get_total_rows_number",
+            name = GET_TOTAL_ROWS_NUMBER,
             description = """
                     Get the total number of data rows (excluding the header row) in an Excel file.
                     Validates the input path and checks if it belongs to the configured workspaces.
@@ -259,15 +275,25 @@ public class FastExcelSpecOperations {
                                       @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
         validateInputPath(excelPath);
 
+        // exists cache
+        String cacheKey = generateCacheKey(excelPath, headRowNumber, sheetName);
+        Integer cachedResult = CacheUtils.get(GET_TOTAL_ROWS_NUMBER, cacheKey);
+        if (Objects.nonNull(cachedResult)) {
+            return cachedResult;
+        }
+
         List<Object> list = createSheetBuilder(excelPath, sheetName)
                 .headRowNumber(headRowNumber)
                 .doReadSync();
-        return CollectionUtils.size(list);
+        int result = CollectionUtils.size(list);
+        CacheUtils.put(GET_TOTAL_ROWS_NUMBER, cacheKey, result);
+
+        return result;
     }
 
     // get_sheet_names
     @Tool(
-            name = "get_sheet_names",
+            name = GET_SHEET_NAMES,
             description = """
                     Retrieve the names and indices of all sheets in an Excel file.
                     Validates the input path and checks if it belongs to the configured workspaces.
@@ -277,18 +303,28 @@ public class FastExcelSpecOperations {
     public List<ExcelSheet> getSheetNames(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath) {
         validateInputPath(excelPath);
 
+        // exists cache
+        String cacheKey = generateCacheKey(excelPath);
+        List<ExcelSheet> cachedResult = CacheUtils.get(GET_SHEET_NAMES, cacheKey);
+        if (Objects.nonNull(cachedResult)) {
+            return cachedResult;
+        }
+
         List<ReadSheet> sheets;
         try (ExcelReader excelReader = FastExcelFactory.read(excelPath).build()) {
             sheets = excelReader.excelExecutor().sheetList();
         }
-        return sheets.stream()
+        List<ExcelSheet> result = sheets.stream()
                 .map(sheet -> new ExcelSheet(sheet.getSheetNo(), sheet.getSheetName()))
                 .toList();
+        CacheUtils.put(GET_SHEET_NAMES, cacheKey, result);
+
+        return result;
     }
 
     // read_head_spec
     @Tool(
-            name = "read_head_spec",
+            name = READ_HEAD_SPEC,
             description = """
                     Parse and return the header information from an Excel file.
                     Validates the input path and checks if it belongs to the configured workspaces.
@@ -301,6 +337,13 @@ public class FastExcelSpecOperations {
                                             @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
         validateInputPath(excelPath);
 
+        // exists cache
+        String cacheKey = generateCacheKey(excelPath, headRowNumber, sheetName);
+        List<ExcelPropertyHead> cachedResult = CacheUtils.get(READ_HEAD_SPEC, cacheKey);
+        if (Objects.nonNull(cachedResult)) {
+            return cachedResult;
+        }
+
         ExcelReaderSheetBuilder builder = createSheetBuilder(excelPath, sheetName);
 
         ExcelHeadAnalysisEventListener listener = new ExcelHeadAnalysisEventListener();
@@ -308,12 +351,15 @@ public class FastExcelSpecOperations {
                 .registerReadListener(listener)
                 .numRows(headRowNumber)
                 .doRead();
-        return listener.getHeadList();
+        List<ExcelPropertyHead> result = listener.getHeadList();
+        CacheUtils.put(READ_HEAD_SPEC, cacheKey, result);
+
+        return result;
     }
 
     // read_rows_spec
     @Tool(
-            name = "read_rows_spec",
+            name = READ_ROWS_SPEC,
             description = """
                     Parse and return the data rows from an Excel file with header association.
                     Validates the input path and checks if it belongs to the configured workspaces.
@@ -328,6 +374,13 @@ public class FastExcelSpecOperations {
                                              @ToolParam(required = false, description = "Name of the sheet to read. If empty, defaults to the first sheet.") String sheetName) {
         validateInputPath(excelPath);
 
+        // exists cache
+        String cacheKey = generateCacheKey(excelPath, headRowNumber, readRowNumbers, sheetName);
+        List<ExcelRowProperties> cachedResult = CacheUtils.get(READ_ROWS_SPEC, cacheKey);
+        if (Objects.nonNull(cachedResult)) {
+            return cachedResult;
+        }
+
         ExcelReaderSheetBuilder builder = createSheetBuilder(excelPath, sheetName);
         if (Objects.nonNull(readRowNumbers)) {
             builder.numRows(headRowNumber + readRowNumbers);
@@ -337,11 +390,69 @@ public class FastExcelSpecOperations {
         builder.headRowNumber(headRowNumber)
                 .registerReadListener(listener)
                 .doRead();
-        return listener.getRows();
+        List<ExcelRowProperties> result = listener.getRows();
+        CacheUtils.put(READ_ROWS_SPEC, cacheKey, result);
+
+        return result;
+    }
+
+    // cache_clear
+    @Tool(
+            name = CACHE_CLEAR,
+            description = """
+                    Clear all cached Excel file data.
+                    """
+    )
+    public Boolean deleteCache() {
+        // clear all cache
+        CacheUtils.clear(GET_TOTAL_ROWS_NUMBER);
+        CacheUtils.clear(GET_SHEET_NAMES);
+        CacheUtils.clear(READ_HEAD_SPEC);
+        CacheUtils.clear(READ_ROWS_SPEC);
+        CacheUtils.clear(TEST_CACHE_AVAILABLE);
+
+        return true;
+    }
+
+    // cache_clear
+    @Tool(
+            name = TEST_CACHE_AVAILABLE,
+            description = """
+                    Test cache is available. Returns the MD5 of the file.
+                    """
+    )
+    public Map<String, String> cacheAvailable(@ToolParam(description = "Absolute or relative path to the Excel file.") String excelPath) {
+        validateInputPath(excelPath);
+
+        String cacheKey = generateCacheKey(excelPath);
+        String cachedResult = CacheUtils.get(TEST_CACHE_AVAILABLE, cacheKey);
+        if (cachedResult != null) {
+            return Map.of("cached", "true", "result", "file md5:" + cachedResult);
+        }
+
+        CacheUtils.put(TEST_CACHE_AVAILABLE, cacheKey, cacheKey);
+        return Map.of("cached", "false", "result", "file md5:" + cacheKey);
     }
 
 
     // =========================================
+
+    private static String generateCacheKey(String excelPath, Object... args) {
+        StringBuilder builder = new StringBuilder();
+        if (ArrayUtils.isNotEmpty(args)) {
+            String agrsAsString = Arrays.stream(args)
+                    .filter(Objects::nonNull)
+                    .map(Object::toString)
+                    .collect(Collectors.joining());
+            builder = DigestUtils.appendMd5DigestAsHex(agrsAsString.getBytes(StandardCharsets.UTF_8), builder);
+        }
+        try (FileInputStream in = new FileInputStream(excelPath)) {
+            return DigestUtils.appendMd5DigestAsHex(in, builder).toString();
+        } catch (IOException ex) {
+            log.error("FastExcelSpecOperations#generateCacheKey error", ex);
+        }
+        return DigestUtils.appendMd5DigestAsHex(excelPath.getBytes(StandardCharsets.UTF_8), builder).toString();
+    }
 
     private ExcelReaderSheetBuilder createSheetBuilder(String excelPath, String sheetName) {
         if (StringUtils.isNotBlank(sheetName)) {

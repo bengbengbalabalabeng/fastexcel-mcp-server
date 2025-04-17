@@ -202,22 +202,31 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl;
+package org.baicaixiaozhan.mcp.server.fastexecl.util.internal;
 
-import org.baicaixiaozhan.mcp.server.fastexecl.config.properties.FastExcelMcpServerProperties;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.annotation.EnableCaching;
+import org.baicaixiaozhan.mcp.server.fastexecl.annotation.Beta;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
+import org.springframework.stereotype.Component;
 
+/**
+ * DESC: 简易版 Spring {@link ApplicationContext} 操作工具类<br />
+ * 建议在 Spring IoC 环境全部启动后再使用
+ *
+ * @author baicaixiaozhan
+ * @since v1.0.0
+ */
+@Beta
+@Component
+public class SpringUtils implements ApplicationContextAware {
+    private static ApplicationContext applicationContext;
 
-@EnableCaching
-@EnableConfigurationProperties(FastExcelMcpServerProperties.class)
-@SpringBootApplication
-public class Application {
+    @Override
+    public void setApplicationContext(ApplicationContext context) {
+        applicationContext = context;
+    }
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
-
+    public static ApplicationContext getApplicationContext() {
+        return applicationContext;
+    }
 }

@@ -202,22 +202,22 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl;
+package org.baicaixiaozhan.mcp.server.fastexecl.annotation;
 
-import org.baicaixiaozhan.mcp.server.fastexecl.config.properties.FastExcelMcpServerProperties;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.annotation.EnableCaching;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
-
-@EnableCaching
-@EnableConfigurationProperties(FastExcelMcpServerProperties.class)
-@SpringBootApplication
-public class Application {
-
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
-
+/**
+ * DESC: Signifies that a public API (public class, method or field) is subject to incompatible changes,
+ * or even removal, in a future release. An API bearing this annotation is exempt from any compatibility
+ * guarantees made by its containing library.
+ *
+ * @author baicaixiaozhan
+ * @since v1.0.0
+ */
+@Documented
+@Retention(RetentionPolicy.SOURCE)
+public @interface Beta {
+    // just an annotation, no code needed
 }

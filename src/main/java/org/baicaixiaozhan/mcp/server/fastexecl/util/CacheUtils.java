@@ -202,22 +202,80 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl;
+package org.baicaixiaozhan.mcp.server.fastexecl.util;
 
-import org.baicaixiaozhan.mcp.server.fastexecl.config.properties.FastExcelMcpServerProperties;
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.cache.annotation.EnableCaching;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+import org.baicaixiaozhan.mcp.server.fastexecl.util.internal.SpringUtils;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationContext;
 
+/**
+ * DESC: 本地缓存工具类
+ *
+ * @author baicaixiaozhan
+ * @since v1.0.0
+ */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings(value = {"unchecked"})
+public class CacheUtils {
 
-@EnableCaching
-@EnableConfigurationProperties(FastExcelMcpServerProperties.class)
-@SpringBootApplication
-public class Application {
+    private static class CacheManagerHolder {
+        private static final CacheManager cm;
 
-	public static void main(String[] args) {
-		SpringApplication.run(Application.class, args);
-	}
+        static {
+            ApplicationContext context = SpringUtils.getApplicationContext();
+            if (context == null) {
+                throw new IllegalArgumentException("Spring context is not initialized.");
+            }
+            cm = context.getBean(CacheManager.class);
+        }
+    }
+
+    private static CacheManager getCacheManager() {
+        return CacheManagerHolder.cm;
+    }
+
+    /**
+     * 获取缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
+     */
+    public static <T> T get(String cacheNames, Object key) {
+        Cache.ValueWrapper wrapper = getCacheManager().getCache(cacheNames).get(key);
+        return wrapper != null ? (T) wrapper.get() : null;
+    }
+
+    /**
+     * 保存缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
+     * @param value      缓存值
+     */
+    public static void put(String cacheNames, Object key, Object value) {
+        getCacheManager().getCache(cacheNames).put(key, value);
+    }
+
+    /**
+     * 删除缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
+     */
+    public static void evict(String cacheNames, Object key) {
+        getCacheManager().getCache(cacheNames).evict(key);
+    }
+
+    /**
+     * 清空缓存值
+     *
+     * @param cacheNames 缓存组名称
+     */
+    public static void clear(String cacheNames) {
+        getCacheManager().getCache(cacheNames).clear();
+    }
 
 }

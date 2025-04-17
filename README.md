@@ -55,7 +55,7 @@ Add this to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "fastexcel": {
+    "fastexecl-mcp-server": {
       "command": "java",
       "args": [
         "-jar",

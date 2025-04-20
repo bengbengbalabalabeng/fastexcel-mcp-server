@@ -68,11 +68,11 @@ Add this to your `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "fastexecl-mcp-server": {
+    "fastexcel-mcp-server": {
       "command": "java",
       "args": [
         "-jar",
-        "<YOUR_PATH>/fastexecl-mcp-server-0.0.1-SNAPSHOT.jar"
+        "<YOUR_PATH>/fastexcel-mcp-server-0.0.1-SNAPSHOT.jar"
       ],
       "env": {
         "MCP_WORKSPACES": "<YOUR_MULTIPLE_WORKSPACES_SEPARATED_BY_COMMAS>",

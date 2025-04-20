@@ -202,58 +202,22 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.domain.modal;
+package org.baicaixiaozhan.mcp.server.fastexcel.annotation;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import lombok.Data;
-import org.apache.commons.lang3.StringUtils;
-
-import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.lang.annotation.Documented;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 
 /**
- * DESC: Excel 表头
+ * DESC: Signifies that a public API (public class, method or field) is subject to incompatible changes,
+ * or even removal, in a future release. An API bearing this annotation is exempt from any compatibility
+ * guarantees made by its containing library.
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Data
-public class ExcelPropertyHead implements Serializable {
-
-    /**
-     * 表头列下标 (从 1 开始)
-     */
-    private Integer columnIndex;
-
-    /**
-     * 表头名称
-     */
-    private List<String> titles;
-
-    public ExcelPropertyHead() {
-    }
-
-    public ExcelPropertyHead(Integer columnIndex, List<String> titles) {
-        this.columnIndex = columnIndex;
-        this.titles = titles;
-    }
-
-    public ExcelPropertyHead(Integer columnIndex, String title) {
-        this.columnIndex = columnIndex;
-        this.titles = new ArrayList<>(2);
-        addTitle(title);
-    }
-
-    @JsonIgnore
-    public void addTitle(String title) {
-        if (StringUtils.isBlank(title)) {
-            return;
-        }
-        if (Objects.isNull(titles)) {
-            titles = new ArrayList<>();
-        }
-        titles.add(title);
-    }
+@Documented
+@Retention(RetentionPolicy.SOURCE)
+public @interface Beta {
+    // just an annotation, no code needed
 }

@@ -202,33 +202,80 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.domain.modal;
+package org.baicaixiaozhan.mcp.server.fastexcel.util;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
-
-import java.io.Serializable;
+import org.baicaixiaozhan.mcp.server.fastexcel.util.internal.SpringUtils;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.context.ApplicationContext;
 
 /**
- * DESC: Excel Sheet 信息
+ * DESC: 本地缓存工具类
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@NoArgsConstructor
-@AllArgsConstructor
-@Data
-public class ExcelSheet implements Serializable {
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+@SuppressWarnings(value = {"unchecked"})
+public class CacheUtils {
+
+    private static class CacheManagerHolder {
+        private static final CacheManager cm;
+
+        static {
+            ApplicationContext context = SpringUtils.getApplicationContext();
+            if (context == null) {
+                throw new IllegalArgumentException("Spring context is not initialized.");
+            }
+            cm = context.getBean(CacheManager.class);
+        }
+    }
+
+    private static CacheManager getCacheManager() {
+        return CacheManagerHolder.cm;
+    }
 
     /**
-     * Sheet 序号
+     * 获取缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
      */
-    private Integer sheetNo;
+    public static <T> T get(String cacheNames, Object key) {
+        Cache.ValueWrapper wrapper = getCacheManager().getCache(cacheNames).get(key);
+        return wrapper != null ? (T) wrapper.get() : null;
+    }
 
     /**
-     * Sheet 名称
+     * 保存缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
+     * @param value      缓存值
      */
-    private String sheetName;
+    public static void put(String cacheNames, Object key, Object value) {
+        getCacheManager().getCache(cacheNames).put(key, value);
+    }
+
+    /**
+     * 删除缓存值
+     *
+     * @param cacheNames 缓存组名称
+     * @param key        缓存key
+     */
+    public static void evict(String cacheNames, Object key) {
+        getCacheManager().getCache(cacheNames).evict(key);
+    }
+
+    /**
+     * 清空缓存值
+     *
+     * @param cacheNames 缓存组名称
+     */
+    public static void clear(String cacheNames) {
+        getCacheManager().getCache(cacheNames).clear();
+    }
 
 }

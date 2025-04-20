@@ -202,24 +202,63 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.exception;
+package org.baicaixiaozhan.mcp.server.fastexcel.listener;
 
-import org.springframework.core.NestedRuntimeException;
+import cn.idev.excel.context.AnalysisContext;
+import cn.idev.excel.event.AnalysisEventListener;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import org.baicaixiaozhan.mcp.server.fastexcel.domain.modal.ExcelPropertyHead;
+
+import java.util.*;
 
 /**
- * DESC: 异常基类
+ * DESC: Excel 表头解析
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-public class BaseMcpServerException extends NestedRuntimeException {
+@Slf4j
+public class ExcelHeadAnalysisEventListener extends AnalysisEventListener<Map<Integer, String>> {
 
-    public BaseMcpServerException(String message) {
-        super(message);
+    @Getter
+    private final Map<Integer, ExcelPropertyHead> headsMap;
+
+    public ExcelHeadAnalysisEventListener() {
+        headsMap = new HashMap<>();
     }
 
-    public BaseMcpServerException(String message, Throwable cause) {
-        super(message, cause);
+    @Override
+    public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
+        if (log.isDebugEnabled()) {
+            log.debug("Invoke Head Map: {} - {}", context.readRowHolder().getRowIndex(), headMap);
+        }
+        for (Map.Entry<Integer, String> entry : headMap.entrySet()) {
+            ExcelPropertyHead head = headsMap.get(entry.getKey());
+            if (Objects.isNull(head)) {
+                headsMap.put(entry.getKey(), new ExcelPropertyHead(entry.getKey() + 1, entry.getValue()));
+            } else {
+                head.addTitle(entry.getValue());
+            }
+        }
     }
 
+    @Override
+    public void invoke(Map<Integer, String> data, AnalysisContext context) {
+        // do nothing
+    }
+
+    @Override
+    public void doAfterAllAnalysed(AnalysisContext context) {
+        // do nothing
+    }
+
+
+    public List<ExcelPropertyHead> getHeadList() {
+        return headsMap.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
+    }
 }

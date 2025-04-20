@@ -202,80 +202,58 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.util;
+package org.baicaixiaozhan.mcp.server.fastexcel.domain.modal;
 
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
-import org.baicaixiaozhan.mcp.server.fastexecl.util.internal.SpringUtils;
-import org.springframework.cache.Cache;
-import org.springframework.cache.CacheManager;
-import org.springframework.context.ApplicationContext;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 /**
- * DESC: 本地缓存工具类
+ * DESC: Excel 表头
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
-@SuppressWarnings(value = {"unchecked"})
-public class CacheUtils {
+@Data
+public class ExcelPropertyHead implements Serializable {
 
-    private static class CacheManagerHolder {
-        private static final CacheManager cm;
+    /**
+     * 表头列下标 (从 1 开始)
+     */
+    private Integer columnIndex;
 
-        static {
-            ApplicationContext context = SpringUtils.getApplicationContext();
-            if (context == null) {
-                throw new IllegalArgumentException("Spring context is not initialized.");
-            }
-            cm = context.getBean(CacheManager.class);
+    /**
+     * 表头名称
+     */
+    private List<String> titles;
+
+    public ExcelPropertyHead() {
+    }
+
+    public ExcelPropertyHead(Integer columnIndex, List<String> titles) {
+        this.columnIndex = columnIndex;
+        this.titles = titles;
+    }
+
+    public ExcelPropertyHead(Integer columnIndex, String title) {
+        this.columnIndex = columnIndex;
+        this.titles = new ArrayList<>(2);
+        addTitle(title);
+    }
+
+    @JsonIgnore
+    public void addTitle(String title) {
+        if (StringUtils.isBlank(title)) {
+            return;
         }
+        if (Objects.isNull(titles)) {
+            titles = new ArrayList<>();
+        }
+        titles.add(title);
     }
-
-    private static CacheManager getCacheManager() {
-        return CacheManagerHolder.cm;
-    }
-
-    /**
-     * 获取缓存值
-     *
-     * @param cacheNames 缓存组名称
-     * @param key        缓存key
-     */
-    public static <T> T get(String cacheNames, Object key) {
-        Cache.ValueWrapper wrapper = getCacheManager().getCache(cacheNames).get(key);
-        return wrapper != null ? (T) wrapper.get() : null;
-    }
-
-    /**
-     * 保存缓存值
-     *
-     * @param cacheNames 缓存组名称
-     * @param key        缓存key
-     * @param value      缓存值
-     */
-    public static void put(String cacheNames, Object key, Object value) {
-        getCacheManager().getCache(cacheNames).put(key, value);
-    }
-
-    /**
-     * 删除缓存值
-     *
-     * @param cacheNames 缓存组名称
-     * @param key        缓存key
-     */
-    public static void evict(String cacheNames, Object key) {
-        getCacheManager().getCache(cacheNames).evict(key);
-    }
-
-    /**
-     * 清空缓存值
-     *
-     * @param cacheNames 缓存组名称
-     */
-    public static void clear(String cacheNames) {
-        getCacheManager().getCache(cacheNames).clear();
-    }
-
 }

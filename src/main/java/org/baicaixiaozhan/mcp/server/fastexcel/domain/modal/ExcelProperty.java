@@ -202,22 +202,43 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.exception;
+package org.baicaixiaozhan.mcp.server.fastexcel.domain.modal;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.annotation.Nullable;
+import lombok.Data;
+import org.apache.commons.lang3.StringUtils;
+
+import java.io.Serializable;
 
 /**
- * DESC: 工作路径验证失败异常
+ * DESC: Excel 单元格
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-public class InvalidWorkSpacePathException extends BaseMcpServerException {
+@Data
+public class ExcelProperty implements Serializable {
 
-    public InvalidWorkSpacePathException(String message) {
-        super(message);
+    /**
+     * 表头
+     */
+    @Nullable
+    private ExcelPropertyHead head;
+
+    /**
+     * 单元格数据
+     */
+    private String text;
+
+
+    /**
+     * 是否存在数据
+     *
+     * @return {@link Boolean}
+     */
+    @JsonIgnore
+    public boolean hasText() {
+        return StringUtils.isNotBlank(text);
     }
-
-    public InvalidWorkSpacePathException(String message, Throwable cause) {
-        super(message, cause);
-    }
-
 }

@@ -202,35 +202,33 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.domain.ser;
+package org.baicaixiaozhan.mcp.server.fastexcel.domain.modal;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.JsonSerializer;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 
-import java.io.IOException;
-import java.util.List;
-import java.util.Map;
+import java.io.Serializable;
 
 /**
- * DESC:
+ * DESC: Excel Sheet 信息
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-public class MappingExcelPropertySerializer extends JsonSerializer<Map<Integer, ExcelProperty>> {
+@NoArgsConstructor
+@AllArgsConstructor
+@Data
+public class ExcelSheet implements Serializable {
 
-    @Override
-    public void serialize(Map<Integer, ExcelProperty> value,
-                          JsonGenerator gen, SerializerProvider serializers) throws IOException {
-        List<ExcelProperty> properties = value.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .toList();
+    /**
+     * Sheet 序号
+     */
+    private Integer sheetNo;
 
-        gen.writeObject(properties);
-    }
+    /**
+     * Sheet 名称
+     */
+    private String sheetName;
 
 }

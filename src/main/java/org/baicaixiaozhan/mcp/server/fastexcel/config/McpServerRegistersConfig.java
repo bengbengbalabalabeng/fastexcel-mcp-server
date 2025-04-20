@@ -202,63 +202,30 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.listener;
+package org.baicaixiaozhan.mcp.server.fastexcel.config;
 
-import cn.idev.excel.context.AnalysisContext;
-import cn.idev.excel.event.AnalysisEventListener;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.modal.ExcelPropertyHead;
+import org.baicaixiaozhan.mcp.server.fastexcel.service.FastExcelSpecOperations;
+import org.springframework.ai.tool.ToolCallbackProvider;
+import org.springframework.ai.tool.method.MethodToolCallbackProvider;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
 
-import java.util.*;
 
 /**
- * DESC: Excel 表头解析
+ * DESC: FastExcel MCP 服务注册配置
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Slf4j
-public class ExcelHeadAnalysisEventListener extends AnalysisEventListener<Map<Integer, String>> {
+@Configuration
+public class McpServerRegistersConfig {
 
-    @Getter
-    private final Map<Integer, ExcelPropertyHead> headsMap;
 
-    public ExcelHeadAnalysisEventListener() {
-        headsMap = new HashMap<>();
+    @Bean
+    public ToolCallbackProvider fastExcelTools(FastExcelSpecOperations specOperations) {
+        return MethodToolCallbackProvider.builder()
+                .toolObjects(specOperations)
+                .build();
     }
 
-    @Override
-    public void invokeHeadMap(Map<Integer, String> headMap, AnalysisContext context) {
-        if (log.isDebugEnabled()) {
-            log.debug("Invoke Head Map: {} - {}", context.readRowHolder().getRowIndex(), headMap);
-        }
-        for (Map.Entry<Integer, String> entry : headMap.entrySet()) {
-            ExcelPropertyHead head = headsMap.get(entry.getKey());
-            if (Objects.isNull(head)) {
-                headsMap.put(entry.getKey(), new ExcelPropertyHead(entry.getKey() + 1, entry.getValue()));
-            } else {
-                head.addTitle(entry.getValue());
-            }
-        }
-    }
-
-    @Override
-    public void invoke(Map<Integer, String> data, AnalysisContext context) {
-        // do nothing
-    }
-
-    @Override
-    public void doAfterAllAnalysed(AnalysisContext context) {
-        // do nothing
-    }
-
-
-    public List<ExcelPropertyHead> getHeadList() {
-        return headsMap.entrySet()
-                .stream()
-                .sorted(Map.Entry.comparingByKey())
-                .map(Map.Entry::getValue)
-                .toList();
-    }
 }

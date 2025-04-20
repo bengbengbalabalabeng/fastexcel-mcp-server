@@ -202,30 +202,27 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.config;
+package org.baicaixiaozhan.mcp.server.fastexcel.config.properties;
 
-import org.baicaixiaozhan.mcp.server.fastexecl.service.FastExcelSpecOperations;
-import org.springframework.ai.tool.ToolCallbackProvider;
-import org.springframework.ai.tool.method.MethodToolCallbackProvider;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import lombok.Data;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.nio.file.Path;
+import java.util.List;
 
 /**
- * DESC: FastExcel MCP 服务注册配置
+ * DESC:
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Configuration
-public class McpServerRegistersConfig {
+@ConfigurationProperties(prefix = "fast-excel-mcp")
+@Data
+public class FastExcelMcpServerProperties {
 
-
-    @Bean
-    public ToolCallbackProvider fastExcelTools(FastExcelSpecOperations specOperations) {
-        return MethodToolCallbackProvider.builder()
-                .toolObjects(specOperations)
-                .build();
-    }
+    /**
+     * 可访问的基础工作目录
+     */
+    private List<Path> workspaces;
 
 }

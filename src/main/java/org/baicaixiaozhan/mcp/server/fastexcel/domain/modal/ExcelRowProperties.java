@@ -202,31 +202,58 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.util.internal;
+package org.baicaixiaozhan.mcp.server.fastexcel.domain.modal;
 
-import org.baicaixiaozhan.mcp.server.fastexecl.annotation.Beta;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
-import org.springframework.stereotype.Component;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import lombok.Data;
+import org.baicaixiaozhan.mcp.server.fastexcel.domain.ser.MappingExcelPropertySerializer;
+
+import java.io.Serializable;
+import java.util.*;
 
 /**
- * DESC: 简易版 Spring {@link ApplicationContext} 操作工具类<br />
- * 建议在 Spring IoC 环境全部启动后再使用
+ * DESC: Excel 单元格行
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Beta
-@Component
-public class SpringUtils implements ApplicationContextAware {
-    private static ApplicationContext applicationContext;
+@Data
+public class ExcelRowProperties implements Serializable {
 
-    @Override
-    public void setApplicationContext(ApplicationContext context) {
-        applicationContext = context;
+    /**
+     * Excel 行下标 (从 1 开始)
+     */
+    private Integer rowIndex;
+
+    /**
+     * 单元格行 列数据集
+     */
+    @JsonSerialize(using = MappingExcelPropertySerializer.class)
+    private Map<Integer, ExcelProperty> properties;
+
+    public ExcelRowProperties() {
+        this(1, new HashMap<>());
     }
 
-    public static ApplicationContext getApplicationContext() {
-        return applicationContext;
+    public ExcelRowProperties(Integer rowIndex, Map<Integer, ExcelProperty> properties) {
+        this.rowIndex = rowIndex;
+        this.properties = properties;
+    }
+
+    public ExcelRowProperties(Integer rowIndex, List<ExcelProperty> properties) {
+        this(rowIndex, mapping(properties));
+    }
+
+    public void addProperty(Integer columnIndex, ExcelProperty property) {
+        properties.put(columnIndex, property);
+    }
+
+
+    private static Map<Integer, ExcelProperty> mapping(List<ExcelProperty> properties) {
+        Map<Integer, ExcelProperty> result = new HashMap<>();
+        for (int i = 0; i < properties.size(); i++) {
+            result.put(i + 1, properties.get(i));
+        }
+        return result;
     }
 }

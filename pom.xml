@@ -10,10 +10,10 @@
     </parent>
 
     <groupId>org.baicaixiaozhan</groupId>
-    <artifactId>fastexecl-mcp-server</artifactId>
+    <artifactId>fastexcel-mcp-server</artifactId>
     <version>0.0.1-SNAPSHOT</version>
 
-    <name>fastexecl-mcp-server</name>
+    <name>fastexcel-mcp-server</name>
 
     <description>FastExcel MCP Server</description>
 

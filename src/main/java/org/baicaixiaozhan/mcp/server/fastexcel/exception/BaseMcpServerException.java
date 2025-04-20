@@ -202,22 +202,24 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.annotation;
+package org.baicaixiaozhan.mcp.server.fastexcel.exception;
 
-import java.lang.annotation.Documented;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import org.springframework.core.NestedRuntimeException;
 
 /**
- * DESC: Signifies that a public API (public class, method or field) is subject to incompatible changes,
- * or even removal, in a future release. An API bearing this annotation is exempt from any compatibility
- * guarantees made by its containing library.
+ * DESC: 异常基类
  *
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@Documented
-@Retention(RetentionPolicy.SOURCE)
-public @interface Beta {
-    // just an annotation, no code needed
+public class BaseMcpServerException extends NestedRuntimeException {
+
+    public BaseMcpServerException(String message) {
+        super(message);
+    }
+
+    public BaseMcpServerException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
 }

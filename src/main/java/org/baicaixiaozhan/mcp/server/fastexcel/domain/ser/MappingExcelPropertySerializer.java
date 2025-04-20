@@ -202,13 +202,16 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.config.properties;
+package org.baicaixiaozhan.mcp.server.fastexcel.domain.ser;
 
-import lombok.Data;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+import org.baicaixiaozhan.mcp.server.fastexcel.domain.modal.ExcelProperty;
 
-import java.nio.file.Path;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * DESC:
@@ -216,13 +219,18 @@ import java.util.List;
  * @author baicaixiaozhan
  * @since v1.0.0
  */
-@ConfigurationProperties(prefix = "fast-excel-mcp")
-@Data
-public class FastExcelMcpServerProperties {
+public class MappingExcelPropertySerializer extends JsonSerializer<Map<Integer, ExcelProperty>> {
 
-    /**
-     * 可访问的基础工作目录
-     */
-    private List<Path> workspaces;
+    @Override
+    public void serialize(Map<Integer, ExcelProperty> value,
+                          JsonGenerator gen, SerializerProvider serializers) throws IOException {
+        List<ExcelProperty> properties = value.entrySet()
+                .stream()
+                .sorted(Map.Entry.comparingByKey())
+                .map(Map.Entry::getValue)
+                .toList();
+
+        gen.writeObject(properties);
+    }
 
 }

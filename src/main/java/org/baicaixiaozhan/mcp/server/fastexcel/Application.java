@@ -202,58 +202,22 @@
  *    limitations under the License.
  */
 
-package org.baicaixiaozhan.mcp.server.fastexecl.domain.modal;
+package org.baicaixiaozhan.mcp.server.fastexcel;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import lombok.Data;
-import org.baicaixiaozhan.mcp.server.fastexecl.domain.ser.MappingExcelPropertySerializer;
-
-import java.io.Serializable;
-import java.util.*;
-
-/**
- * DESC: Excel 单元格行
- *
- * @author baicaixiaozhan
- * @since v1.0.0
- */
-@Data
-public class ExcelRowProperties implements Serializable {
-
-    /**
-     * Excel 行下标 (从 1 开始)
-     */
-    private Integer rowIndex;
-
-    /**
-     * 单元格行 列数据集
-     */
-    @JsonSerialize(using = MappingExcelPropertySerializer.class)
-    private Map<Integer, ExcelProperty> properties;
-
-    public ExcelRowProperties() {
-        this(1, new HashMap<>());
-    }
-
-    public ExcelRowProperties(Integer rowIndex, Map<Integer, ExcelProperty> properties) {
-        this.rowIndex = rowIndex;
-        this.properties = properties;
-    }
-
-    public ExcelRowProperties(Integer rowIndex, List<ExcelProperty> properties) {
-        this(rowIndex, mapping(properties));
-    }
-
-    public void addProperty(Integer columnIndex, ExcelProperty property) {
-        properties.put(columnIndex, property);
-    }
+import org.baicaixiaozhan.mcp.server.fastexcel.config.properties.FastExcelMcpServerProperties;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.cache.annotation.EnableCaching;
 
 
-    private static Map<Integer, ExcelProperty> mapping(List<ExcelProperty> properties) {
-        Map<Integer, ExcelProperty> result = new HashMap<>();
-        for (int i = 0; i < properties.size(); i++) {
-            result.put(i + 1, properties.get(i));
-        }
-        return result;
-    }
+@EnableCaching
+@EnableConfigurationProperties(FastExcelMcpServerProperties.class)
+@SpringBootApplication
+public class Application {
+
+	public static void main(String[] args) {
+		SpringApplication.run(Application.class, args);
+	}
+
 }
